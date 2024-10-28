@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>健康习惯追踪</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .nav-tabs {
+            margin: 20px 0;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            border: none;
+            background: none;
+            cursor: pointer;
+        }
+
+        .tab-btn.active {
+            border-bottom: 2px solid #4CAF50;
+            color: #4CAF50;
+        }
+
+        .panel {
+            display: none;
+        }
+
+        .panel.active {
+            display: block;
+        }
+
+        .task-list {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .task-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            background-color: white;
+        }
+
+        .task-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .task-number {
+            min-width: 25px;
+            font-weight: bold;
+            color: #666;
+        }
+
+        .score-display {
+            font-size: 24px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            margin: 0 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .btn:hover {
+            background-color: #45a049;
+        }
+
+        .edit-btn {
+            background-color: #2196F3;
+        }
+
+        .delete-btn {
+            background-color: #f44336;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 8px;
+        }
+
+        .modal input {
+            width: 100%;
+            padding: 8px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .modal-buttons {
+            text-align: right;
+            margin-top: 20px;
+        }
+
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .chart-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .chart-item:last-child {
+            grid-column: 1 / -1;
+        }
+
+        .weekly-summary {
+            background: #f5f5f5;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+        }
+
+        .weekly-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .stat-item {
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .view-switches {
+            margin-bottom: 15px;
+        }
+
+        .view-btn {
+            padding: 8px 16px;
+            margin-right: 10px;
+            border: 1px solid #4CAF50;
+            background: white;
+            color: #4CAF50;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .view-btn.active {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .date-select {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            margin-bottom: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .chart-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .chart-item {
+                grid-column: 1;
+            }
+        }
+
+        .history-item {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .history-date {
+            font-weight: bold;
+            color: #4CAF50;
+            margin-bottom: 10px;
+        }
+
+        .task-record {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .history-tasks {
+            margin-top: 10px;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        .history-list {
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        
+        .analysis-controls {
+            margin-bottom: 20px;
+        }
+        
+        .analysis-summary {
+            margin-top: 20px;
+        }
+
+        .test-btn {
+            background-color: #9c27b0;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        .test-btn:hover {
+            background-color: #7b1fa2;
+        }
+    </style>
+</head>
+<body>
+    <h1>每日健康习惯追踪</h1>
+    
+    <!-- 导航标签 -->
+    <div class="nav-tabs">
+        <button class="tab-btn active" onclick="switchTab('today')">今日任务</button>
+        <button class="tab-btn" onclick="switchTab('history')">历史记录</button>
+        <button class="tab-btn" onclick="switchTab('analysis')">统计分析</button>
+    </div>
+
+    <!-- 今日任务面板 -->
+    <div id="todayPanel" class="panel active">
+        <div class="score-display">
+            今日得分：<span id="dailyScore">0</span>/100
+        </div>
+        <div class="task-management">
+            <button onclick="showAddTaskModal()" class="btn">添加新任务</button>
+            <button onclick="saveDaily()" class="btn save-btn">保存今日记录</button>
+        </div>
+        <div class="task-list" id="taskList"></div>
+    </div>
+
+    <!-- 历史记录面板 -->
+    <div id="historyPanel" class="panel">
+        <div class="history-list" id="historyList"></div>
+    </div>
+
+    <!-- 添加统计分析面板 -->
+    <div id="analysisPanel" class="panel">
+        <div class="analysis-controls">
+            <div class="view-switches">
+                <button class="view-btn active" onclick="switchView('week')">周视图</button>
+                <button class="view-btn" onclick="switchView('month')">月视图</button>
+            </div>
+            <select id="weekSelect" class="date-select">
+                <!-- 周选项将通过 JS 动态生成 -->
+            </select>
+            <select id="monthSelect" class="date-select" style="display: none;">
+                <!-- 月份选项将通过 JS 动态生成 -->
+            </select>
+        </div>
+        <div class="chart-container"></div>
+        <div class="analysis-summary" id="analysisSummary"></div>
+    </div>
+
+    <!-- 添加/编辑任务的模态框 -->
+    <div id="taskModal" class="modal">
+        <div class="modal-content">
+            <h2 id="modalTitle">添加新任务</h2>
+            <input type="text" id="taskName" placeholder="任务名称">
+            <input type="number" id="taskPoints" placeholder="分值" min="1" max="100">
+            <div class="modal-buttons">
+                <button onclick="saveTask()" class="btn">保存</button>
+                <button onclick="closeModal()" class="btn">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 常量定义
+        const REQUIRED_TASK_COUNT = 10;
+        const REQUIRED_TOTAL_POINTS = 100;
+
+        // 全局变量
+        let tasks = [];
+        let historyData = {};
+        let currentEditingTaskId = null;
+
+        // 默认任务数据
+        const defaultTasks = [
+            { id: 1, name: "按时吃药", points: 10, completed: false },
+            { id: 2, name: "22：30之前上床睡觉", points: 10, completed: false },
+            { id: 3, name: "每天早晚两次血压测量", points: 10, completed: false },
+            { id: 4, name: "每天至少3公里跑步", points: 10, completed: false },
+            { id: 5, name: "每天阅读30分钟", points: 10, completed: false },
+            { id: 6, name: "每天早上5:30起床", points: 10, completed: false },
+            { id: 7, name: "每天泡脚", points: 10, completed: false },
+            { id: 8, name: "每天洗澡", points: 10, completed: false },
+            { id: 9, name: "每天运动健康减脂计划", points: 10, completed: false },
+            { id: 10, name: "健康饮食", points: 10, completed: false }
+        ];
+
+        // 任务管理相关函数
+        function renderTasks() {
+            const taskList = document.getElementById('taskList');
+            taskList.innerHTML = '';
+            
+            tasks.forEach((task, index) => {
+                const taskElement = document.createElement('div');
+                taskElement.className = 'task-item';
+                taskElement.innerHTML = `
+                    <div class="task-content">
+                        <span class="task-number">${index + 1}.</span>
+                        <input type="checkbox" id="task${task.id}" 
+                               ${task.completed ? 'checked' : ''} 
+                               onchange="updateTask(${task.id})">
+                        <label for="task${task.id}">${task.name} (${task.points}分)</label>
+                    </div>
+                    <div class="task-controls">
+                        <button onclick="editTask(${task.id})" class="btn edit-btn">编辑</button>
+                        <button onclick="deleteTask(${task.id})" class="btn delete-btn">删除</button>
+                    </div>
+                `;
+                taskList.appendChild(taskElement);
+            });
+        }
+
+        function updateTask(taskId) {
+            const task = tasks.find(t => t.id === taskId);
+            if (task) {
+                task.completed = !task.completed;
+                updateDailyScore();
+                saveTasks();
+            }
+        }
+
+        function updateDailyScore() {
+            const totalScore = tasks.reduce((sum, task) => {
+                return sum + (task.completed ? task.points : 0);
+            }, 0);
+            
+            document.getElementById('dailyScore').textContent = totalScore;
+        }
+
+        function showAddTaskModal() {
+            document.getElementById('modalTitle').textContent = '添加新任务';
+            document.getElementById('taskName').value = '';
+            document.getElementById('taskPoints').value = '';
+            document.getElementById('taskModal').style.display = 'block';
+            currentEditingTaskId = null;
+        }
+
+        function closeModal() {
+            document.getElementById('taskModal').style.display = 'none';
+        }
+
+        function saveTask() {
+            const name = document.getElementById('taskName').value.trim();
+            const points = parseInt(document.getElementById('taskPoints').value);
+
+            if (!name || !points) {
+                alert('请填写完整的任务信息！');
+                return;
+            }
+
+            // 计算新的总分
+            let totalPoints = points;
+            tasks.forEach(task => {
+                if (currentEditingTaskId !== task.id) {
+                    totalPoints += task.points;
+                }
+            });
+
+            if (totalPoints > REQUIRED_TOTAL_POINTS) {
+                alert(`添加此任务后总分将超过${REQUIRED_TOTAL_POINTS}分！\n当前总分：${totalPoints}分`);
+                return;
+            }
+
+            if (currentEditingTaskId === null && tasks.length >= REQUIRED_TASK_COUNT) {
+                alert(`任务数量��达到${REQUIRED_TASK_COUNT}个上限！`);
+                return;
+            }
+
+            if (currentEditingTaskId === null) {
+                const newId = tasks.length > 0 ? Math.max(...tasks.map(t => t.id)) + 1 : 1;
+                tasks.push({
+                    id: newId,
+                    name: name,
+                    points: points,
+                    completed: false
+                });
+            } else {
+                const taskIndex = tasks.findIndex(t => t.id === currentEditingTaskId);
+                if (taskIndex !== -1) {
+                    tasks[taskIndex].name = name;
+                    tasks[taskIndex].points = points;
+                }
+            }
+
+            closeModal();
+            renderTasks();
+            updateDailyScore();
+            saveTasks();
+            checkTaskCount();
+        }
+
+        function editTask(taskId) {
+            const task = tasks.find(t => t.id === taskId);
+            if (task) {
+                document.getElementById('modalTitle').textContent = '编辑任务';
+                document.getElementById('taskName').value = task.name;
+                document.getElementById('taskPoints').value = task.points;
+                document.getElementById('taskModal').style.display = 'block';
+                currentEditingTaskId = taskId;
+            }
+        }
+
+        function deleteTask(taskId) {
+            if (confirm('确定要删除这个任务吗？删除后需要添加新任务以保持总数为10个。')) {
+                tasks = tasks.filter(t => t.id !== taskId);
+                renderTasks();
+                updateDailyScore();
+                saveTasks();
+                checkTaskCount();
+            }
+        }
+
+        function checkTaskCount() {
+            const remainingCount = REQUIRED_TASK_COUNT - tasks.length;
+            if (remainingCount > 0) {
+                alert(`当前任务数量不足！\n还需要添加 ${remainingCount} 个任务。\n总任务数量必须保持在 ${REQUIRED_TASK_COUNT} 个。`);
+            }
+        }
+
+        // 数据持久化相关函数
+        function saveTasks() {
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+        }
+
+        function loadTasks() {
+            const savedTasks = localStorage.getItem('tasks');
+            if (savedTasks) {
+                tasks = JSON.parse(savedTasks);
+            } else {
+                tasks = [...defaultTasks];
+                saveTasks();
+            }
+        }
+
+        function saveDaily() {
+            const today = new Date();
+            const dateKey = today.toISOString().split('T')[0];
+            
+            const dailyRecord = {
+                date: dateKey,
+                score: parseInt(document.getElementById('dailyScore').textContent),
+                tasks: tasks.map(task => ({
+                    name: task.name,
+                    points: task.points,
+                    completed: task.completed
+                }))
+            };
+
+            if (!historyData[dateKey] || confirm('今日已有记录，是否覆盖？')) {
+                historyData[dateKey] = dailyRecord;
+                localStorage.setItem('historyData', JSON.stringify(historyData));
+                alert('记录已保存！');
+                
+                // 如果当前在历史记录页面，更新显示
+                if (document.getElementById('historyPanel').classList.contains('active')) {
+                    loadHistoryRecords();
+                }
+                // 如果当前在统计分析页面，更新图表
+                if (document.getElementById('analysisPanel').classList.contains('active')) {
+                    updateAnalysisView();
+                }
+            }
+        }
+
+        // 视图切换相关函数
+        function switchTab(tabName) {
+            document.querySelectorAll('.panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            document.getElementById(`${tabName}Panel`).classList.add('active');
+            event.target.classList.add('active');
+
+            // 根据不同标签加载相应数据
+            switch(tabName) {
+                case 'history':
+                    loadHistoryRecords();
+                    break;
+                case 'analysis':
+                    initWeekSelect();
+                    initMonthSelect();
+                    updateAnalysisView();
+                    break;
+            }
+        }
+
+        function switchView(view) {
+            const weekSelect = document.getElementById('weekSelect');
+            const monthSelect = document.getElementById('monthSelect');
+            
+            document.querySelectorAll('.view-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            if (view === 'week') {
+                weekSelect.style.display = 'block';
+                monthSelect.style.display = 'none';
+                showWeekData(weekSelect.value);
+            } else {
+                weekSelect.style.display = 'none';
+                monthSelect.style.display = 'block';
+                showMonthData(monthSelect.value);
+            }
+        }
+
+        // 添加周数据显示函数
+        function showWeekData(weekValue) {
+            if (!weekValue) return;
+            
+            const [startDate, endDate] = weekValue.split('|');
+            const weekData = {
+                labels: [],
+                scores: [],
+                tasks: {}
+            };
+
+            // 初始化任务统计
+            defaultTasks.forEach(task => {
+                weekData.tasks[task.name] = { completed: 0, total: 0 };
+            });
+
+            // 收集一周的数据
+            for (let d = new Date(startDate); d <= new Date(endDate); d.setDate(d.getDate() + 1)) {
+                const dateStr = d.toISOString().split('T')[0];
+                weekData.labels.push(formatDate(dateStr));
+                
+                const dayData = historyData[dateStr];
+                if (dayData) {
+                    weekData.scores.push(dayData.score);
+                    dayData.tasks.forEach(task => {
+                        weekData.tasks[task.name].total++;
+                        if (task.completed) {
+                            weekData.tasks[task.name].completed++;
+                        }
+                    });
+                } else {
+                    weekData.scores.push(0);
+                }
+            }
+
+            renderCharts(weekData, 'week');
+        }
+
+        // 添加月数据显示函数
+        function showMonthData(monthValue) {
+            if (!monthValue) return;
+            
+            const monthData = {
+                labels: [],
+                scores: [],
+                tasks: {}
+            };
+
+            // 初始化任务统计
+            defaultTasks.forEach(task => {
+                monthData.tasks[task.name] = { completed: 0, total: 0 };
+            });
+
+            // 收集月度数据
+            Object.entries(historyData)
+                .filter(([date]) => date.startsWith(monthValue))
+                .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
+                .forEach(([date, dayData]) => {
+                    monthData.labels.push(formatDate(date));
+                    monthData.scores.push(dayData.score);
+                    
+                    dayData.tasks.forEach(task => {
+                        monthData.tasks[task.name].total++;
+                        if (task.completed) {
+                            monthData.tasks[task.name].completed++;
+                        }
+                    });
+                });
+
+            renderCharts(monthData, 'month');
+        }
+
+        // 修改图表渲染函数
+        function renderCharts(data, view) {
+            const chartContainer = document.querySelector('.chart-container');
+            chartContainer.innerHTML = `
+                <div class="chart-grid">
+                    <div class="chart-item">
+                        <canvas id="scoreChart"></canvas>
+                    </div>
+                    <div class="chart-item">
+                        <canvas id="taskCompletionChart"></canvas>
+                    </div>
+                    <div class="chart-item">
+                        <canvas id="difficultyChart"></canvas>
+                    </div>
+                </div>
+            `;
+
+            // 渲染得分趋势图
+            const scoreCtx = document.getElementById('scoreChart').getContext('2d');
+            new Chart(scoreCtx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: '每日得分',
+                        data: data.scores,
+                        borderColor: '#4CAF50',
+                        tension: 0.1,
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: view === 'week' ? '本周得分趋势' : '本月得分趋势'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+
+            // 渲染任务完成率图
+            const taskStats = Object.entries(data.tasks).map(([name, stats]) => ({
+                name: name,
+                rate: stats.total > 0 ? (stats.completed / stats.total * 100).toFixed(1) : 0
+            }));
+
+            const completionCtx = document.getElementById('taskCompletionChart').getContext('2d');
+            new Chart(completionCtx, {
+                type: 'bar',
+                data: {
+                    labels: taskStats.map(t => t.name),
+                    datasets: [{
+                        label: '完成率(%)',
+                        data: taskStats.map(t => t.rate),
+                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '任务完成率对比'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+
+            // 渲染难度分析图
+            const difficultyCtx = document.getElementById('difficultyChart').getContext('2d');
+            new Chart(difficultyCtx, {
+                type: 'radar',
+                data: {
+                    labels: taskStats.map(t => t.name),
+                    datasets: [{
+                        label: '任务难度',
+                        data: taskStats.map(t => 100 - t.rate),
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        pointBackgroundColor: 'rgba(255, 99, 132, 1)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '任务难度分析'
+                        }
+                    },
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+        }
+
+        // 添加日期工具函数
+        function getWeekDates(dateStr) {
+            const date = new Date(dateStr);
+            const day = date.getDay() || 7; // 将周日的0转换为7
+            const diff = date.getDate() - day + 1; // 调整到本周一
+            
+            const monday = new Date(date.setDate(diff));
+            const sunday = new Date(date.setDate(diff + 6));
+            
+            return {
+                start: monday.toISOString().split('T')[0],
+                end: sunday.toISOString().split('T')[0]
+            };
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return `${date.getMonth() + 1}月${date.getDate()}日`;
+        }
+
+        // 添加周选择器初始化函数
+        function initWeekSelect() {
+            const weekSelect = document.getElementById('weekSelect');
+            weekSelect.innerHTML = '';
+            
+            // 获取所有记录的日期并按周分组
+            const dates = Object.keys(historyData).sort().reverse(); // 倒序排列，最近的日期在前
+            if (dates.length === 0) {
+                // 如果没有记录，至少添加本周
+                const today = new Date();
+                const weekDates = getWeekDates(today.toISOString().split('T')[0]);
+                const option = document.createElement('option');
+                option.value = `${weekDates.start}|${weekDates.end}`;
+                option.textContent = `${formatDate(weekDates.start)} - ${formatDate(weekDates.end)}`;
+                weekSelect.appendChild(option);
+                return;
+            }
+
+            const weeks = new Set();
+            dates.forEach(date => {
+                const weekDates = getWeekDates(date);
+                weeks.add(`${weekDates.start}|${weekDates.end}`);
+            });
+
+            Array.from(weeks).forEach(week => {
+                const [start, end] = week.split('|');
+                const option = document.createElement('option');
+                option.value = week;
+                option.textContent = `${formatDate(start)} - ${formatDate(end)}`;
+                weekSelect.appendChild(option);
+            });
+        }
+
+        // 添加月选择器初始化函数
+        function initMonthSelect() {
+            const monthSelect = document.getElementById('monthSelect');
+            monthSelect.innerHTML = '';
+            
+            const months = new Set();
+            Object.keys(historyData).forEach(date => {
+                months.add(date.substring(0, 7)); // YYYY-MM
+            });
+            
+            // 如果没有记录，添加当前月
+            if (months.size === 0) {
+                const today = new Date();
+                const currentMonth = today.toISOString().substring(0, 7);
+                months.add(currentMonth);
+            }
+
+            Array.from(months).sort().reverse().forEach(month => {
+                const option = document.createElement('option');
+                option.value = month;
+                const [year, monthNum] = month.split('-');
+                option.textContent = `${year}年${monthNum}月`;
+                monthSelect.appendChild(option);
+            });
+        }
+
+        // 修改初始化函数
+        function init() {
+            // 加载历史数据
+            const savedHistory = localStorage.getItem('historyData');
+            if (savedHistory) {
+                historyData = JSON.parse(savedHistory);
+            } else {
+                historyData = {}; // 确保 historyData 被初始化
+            }
+
+            // 加载任务数据
+            loadTasks();
+            renderTasks();
+            updateDailyScore();
+            
+            // 初始化选择器
+            initWeekSelect();
+            initMonthSelect();
+
+            // 添加测试按钮
+            addTestButton();
+        }
+
+        // 确保在页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', init);
+
+        // 修改历史记录显示函数
+        function loadHistoryRecords() {
+            const historyList = document.getElementById('historyList');
+            historyList.innerHTML = '<h3>历史记录</h3>';
+            
+            // 获取所有记录并按日期排序（最新的在前）
+            const records = Object.entries(historyData)
+                .sort(([dateA], [dateB]) => dateB.localeCompare(dateA));
+            
+            if (records.length === 0) {
+                historyList.innerHTML += '<div class="no-data">暂无历史记录</div>';
+                return;
+            }
+
+            records.forEach(([date, data]) => {
+                const recordDiv = document.createElement('div');
+                recordDiv.className = 'history-item';
+                recordDiv.innerHTML = `
+                    <div class="history-date">${formatDate(date)} - 得分：${data.score}</div>
+                    <div class="history-tasks">
+                        ${data.tasks.map(task => `
+                            <div class="task-record">
+                                <span>${task.name} (${task.points}分)</span>
+                                <span>${task.completed ? '✅' : '❌'}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                historyList.appendChild(recordDiv);
+            });
+        }
+
+        // 添加统计分析视图更新函数
+        function updateAnalysisView() {
+            const view = document.querySelector('.view-btn.active').textContent.includes('周') ? 'week' : 'month';
+            if (view === 'week') {
+                const weekSelect = document.getElementById('weekSelect');
+                if (weekSelect.value) {
+                    showWeekData(weekSelect.value);
+                }
+            } else {
+                const monthSelect = document.getElementById('monthSelect');
+                if (monthSelect.value) {
+                    showMonthData(monthSelect.value);
+                }
+            }
+        }
+
+        // 添加生成测试数据的函数
+        function generateTestData() {
+            // 清除现有数据
+            localStorage.clear();
+            historyData = {};
+
+            // 生成最近30天的测试数据
+            const today = new Date();
+            for (let i = 0; i < 30; i++) {
+                const date = new Date();
+                date.setDate(today.getDate() - i);
+                const dateKey = date.toISOString().split('T')[0];
+                
+                // 生成随机完成情况的任务
+                const dailyTasks = defaultTasks.map(task => ({
+                    name: task.name,
+                    points: task.points,
+                    completed: Math.random() > 0.3 // 70%的完成率
+                }));
+
+                // 计算当天的总分
+                const dailyScore = dailyTasks.reduce((sum, task) => 
+                    sum + (task.completed ? task.points : 0), 0);
+
+                // 保存当天的记录
+                historyData[dateKey] = {
+                    date: dateKey,
+                    score: dailyScore,
+                    tasks: dailyTasks
+                };
+            }
+
+            // 保存到 localStorage
+            localStorage.setItem('historyData', JSON.stringify(historyData));
+
+            // 重新初始化页面
+            init();
+
+            // 切换到统计分析标签
+            switchTab('analysis');
+            
+            alert('测试数据已生成！\n包含最近30天的随机记录。\n请在统计分析中查看周视图和月视图。');
+        }
+
+        // 添加测试按钮
+        function addTestButton() {
+            const controlsDiv = document.querySelector('.analysis-controls');
+            if (!controlsDiv.querySelector('.test-btn')) {
+                const testButton = document.createElement('button');
+                testButton.className = 'btn test-btn';
+                testButton.textContent = '生成测试数据';
+                testButton.onclick = generateTestData;
+                testButton.style.marginLeft = '10px';
+                controlsDiv.insertBefore(testButton, controlsDiv.firstChild);
+            }
+        }
+
+        // 添加选择器事件监听
+        document.getElementById('weekSelect').addEventListener('change', function() {
+            showWeekData(this.value);
+        });
+
+        document.getElementById('monthSelect').addEventListener('change', function() {
+            showMonthData(this.value);
+        });
+    </script>
+</body>
+</html>
